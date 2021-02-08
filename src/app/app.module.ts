@@ -6,10 +6,12 @@ import { AppComponent } from './app.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { SpreadTableComponent } from './core/components/spread-table/spread-table.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    SpreadTableComponent
   ],
   imports: [
     BrowserModule,
