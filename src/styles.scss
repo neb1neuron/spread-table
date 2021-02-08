@@ -22,7 +22,7 @@
     "Segoe UI Emoji",
     "Segoe UI Symbol",
     "Noto Color Emoji" !important;
-  color: rgb(40, 39, 46);
+  color: #272b2d;
   font-size: .9rem;
 }
 
@@ -39,3 +39,28 @@ body {
 
 /* Importing Bootstrap SCSS file. */
 @import '~bootstrap/scss/bootstrap';
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-thumb {
+  height: 6px;
+  border: 2px solid rgba(0, 0, 0, 0);
+
+  background-clip: padding-box;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.4);
+  box-shadow: inset -1px -1px 0px rgba(0, 0, 0, 0.05), inset 1px 1px 0px rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+::-webkit-scrollbar-corner {
+  background-color: transparent;
+}

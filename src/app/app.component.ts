@@ -1,5 +1,7 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
-import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
+import { AfterViewInit, Component } from '@angular/core';
+import { FormControl, FormGroup } from '@angular/forms';
+import { Cell } from './models/cell.model';
+import { UndoRedoService } from './services/undo-redo.service';
 
 @Component({
   selector: 'app-root',
@@ -11,12 +13,14 @@ export class AppComponent implements AfterViewInit {
   table = document.getElementById('spreadTable');
   Math = Math;
 
-  rowsNumber = 20;
+  columnWidth = 100;
+
+  rowsNumber = 100;
   columnsNumber = 10;
   columnNames: string[] = [];
   focus = true;
 
-  columnValues: [string[]] = [[]];
+  data: Cell[] = [];
   form = new FormGroup({});
 
   isMouseDown = false;
@@ -24,9 +28,10 @@ export class AppComponent implements AfterViewInit {
   startCellIndex = 0;
   endRowIndex = 0;
   endCellIndex = 0;
-  inEditCell?: Element;
+  selectedCellCoordinates?: { rowIndex: number, columnIndex: number } = undefined;
+  isEditMode = false;
 
-  constructor() {
+  constructor(private undoRedoService: UndoRedoService) {
     this.createData();
   }
 
@@ -36,9 +41,8 @@ export class AppComponent implements AfterViewInit {
     }
 
     for (let i = 0; i < this.rowsNumber; i++) {
-      this.columnValues.push([]);
       for (let j = 0; j < this.columnsNumber; j++) {
-        this.columnValues[i].push(Math.random().toString(36).substr(0, 5));
+        this.data.push({ value: Math.random().toString(36).substr(0, 5), rowIndex: i, columnIndex: j });
       }
     }
   }
@@ -50,65 +54,45 @@ export class AppComponent implements AfterViewInit {
       return false;
     });
 
-    let allCells = document.querySelectorAll('.spread-cell');
-    allCells.forEach((cell, index) => {
-      cell.addEventListener("mousedown", (e) => { this.mouseDownCall(e, cell) });
-      cell.addEventListener("mouseover", (e) => { this.mouseOverCall(cell) });
-      cell.addEventListener("dblclick", (e) => { this.dblClickCall(cell) });
-    });
-
     this.table?.addEventListener("mouseup", () => {
       this.isMouseDown = false;
     });
     this.table?.addEventListener("keydown", (e) => { this.keyDownCall(e) });
   }
 
-  mouseOverCall(cell: Element) {
-    if (!this.isMouseDown || this.inEditCell) return;
-    let selectedCells = this.table?.getElementsByClassName("selected");
-    if (selectedCells) {
-      Array.from(selectedCells).forEach(function (cell) {
-        cell.classList.remove("selected");
-      });
-    }
-    this.selectTo(cell);
+  mouseUp() {
+    this.isMouseDown = false;
   }
 
-  dblClickCall(cell: Element) {
-    if (this.inEditCell) return;
+  mouseOverCall(rowIndex: number, columnIndex: number) {
+    if (!this.isMouseDown || this.isInEditMode(rowIndex, columnIndex)) return;
+
+    this.clearSelection();
+
+    this.selectTo(rowIndex, columnIndex);
+  }
+
+  getDataCell(rowIndex: number, columnIndex: number): Cell | undefined {
+    return this.data.find(d => d.rowIndex === rowIndex && d.columnIndex === columnIndex);
+  }
+
+  doubleClick(rowIndex: number, columnIndex: number) {
+    if (this.selectedCellCoordinates?.rowIndex === rowIndex && this.selectedCellCoordinates.columnIndex === columnIndex && this.isEditMode) return;
+    this.clearSelection();
     this.isMouseDown = false;
-    this.inEditCell = cell;
+    this.isEditMode = true;
     this.focus = true;
-
-    let selectedCells = this.table?.getElementsByClassName("selected");
-    if (selectedCells) {
-      Array.from(selectedCells).forEach(function (cell) {
-        cell.classList.remove("selected");
-      });
-    }
-
-    cell.classList.add("selected");
-    let row = cell.parentElement;
+    this.selectedCellCoordinates = { rowIndex: rowIndex, columnIndex: columnIndex };
 
     this.form = new FormGroup({});
-    const cellValues = row?.getElementsByClassName('spread-cell-value');
-    if (cellValues) {
-      Array.from(cellValues).forEach((cellValue, index) => {
-        this.form.addControl(this.columnNames[index], new FormControl(cellValue.innerHTML))
-      });
-    }
 
-    if (!row) return;
-    this.startCellIndex = ([].slice.call(cell.parentElement?.children) as Element[]).indexOf(cell);
-    this.startRowIndex = ([].slice.call(row.parentElement?.children) as Element[]).indexOf(row);
-  };
+    this.data.filter(d => d.rowIndex === rowIndex).forEach((cellData, index) => {
+      this.form.addControl(this.columnNames[index], new FormControl(this.getDataCell(rowIndex, columnIndex)?.value));
+    });
 
-  isInEditMode(rowIndex: number, cellIndex: number) {
-    if (!this.inEditCell) return false;
-    let row = this.inEditCell.parentElement;
-    if (!row) return;
-    const cellIndex2 = ([].slice.call(this.inEditCell?.parentElement?.children) as Element[]).indexOf(this.inEditCell);
-    const rowIndex2 = ([].slice.call(row.parentElement?.children) as Element[]).indexOf(row) - 1;
+    this.startCellIndex = columnIndex;
+    this.startRowIndex = rowIndex;
+
     if (this.focus) {
       this.focus = false;
       setTimeout(() => { // this will make the execution after the above boolean has changed
@@ -118,8 +102,14 @@ export class AppComponent implements AfterViewInit {
         }
       }, 0);
     }
+  }
 
-    return rowIndex === rowIndex2 && cellIndex === cellIndex2;
+  isInEditMode(rowIndex: number, columnIndex: number) {
+    if (!this.selectedCellCoordinates) return false;
+    const cellIndex2 = this.selectedCellCoordinates.columnIndex;
+    const rowIndex2 = this.selectedCellCoordinates.rowIndex;
+
+    return rowIndex === rowIndex2 && columnIndex === cellIndex2 && this.isEditMode;
   }
 
   keyDownCall(e: Event) {
@@ -133,61 +123,93 @@ export class AppComponent implements AfterViewInit {
       e.preventDefault();
     }
 
+    if (event.ctrlKey && event.key === 'z') {
+      const lastChange = this.undoRedoService.undo();
+      if (lastChange) {
+        this.clearSelection();
+        let cellData = this.getDataCell(lastChange.coordinates.rowIndex, lastChange.coordinates.columnIndex);
+        if (cellData) {
+          cellData.value = lastChange.beforeValue;
+          cellData.selected = true;
+        }
+      }
+    }
+
+    if (event.ctrlKey && event.key === 'y') {
+      const lastChange = this.undoRedoService.redo();
+      if (lastChange) {
+        this.clearSelection();
+        let cellData = this.getDataCell(lastChange.coordinates.rowIndex, lastChange.coordinates.columnIndex);
+        if (cellData) {
+          cellData.value = lastChange.beforeValue;
+          cellData.selected = true;
+        }
+      }
+    }
+
     if (event.key === 'Enter') {
       this.table?.focus();
     }
   }
 
   cutSelectedCellsValues() {
-    let selectedCells = this.table?.getElementsByClassName("selected");
-    if (selectedCells) {
-      Array.from(selectedCells).forEach((cell) => {
-        let row = cell.parentElement;
-        if (!row) return;
-        let cellIndex = ([].slice.call(cell.parentElement?.children) as Element[]).indexOf(cell);
-        let rowIndex = ([].slice.call(row.parentElement?.children) as Element[]).indexOf(row) - 1;
-        this.columnValues[rowIndex][cellIndex] = '';
+    let selectedCells = this.data.filter(d => d.selected);
+
+    selectedCells.forEach(cell => {
+      let cellData = this.getDataCell(cell.rowIndex, cell.columnIndex);
+      if (cellData) cellData.value = null;
+    });
+
+  }
+
+  setCellValue(columnName: string, rowIndex: number, columnIndex: number) {
+    if (this.getDataCell(rowIndex, columnIndex)?.value !== this.form.value[columnName]) {
+      this.undoRedoService.setChange({
+        coordinates:
+          { rowIndex: rowIndex, columnIndex: columnIndex },
+        beforeValue: this.getDataCell(rowIndex, columnIndex)?.value,
+        afterValue: this.form.value[columnName]
       });
+      let cellData = this.getDataCell(rowIndex, columnIndex);
+      if (cellData) cellData.value = this.form.value[columnName];
     }
+    this.isEditMode = false;
+    this.selectedCellCoordinates = undefined;
   }
 
-  setCellValue(columnName: string, rowIndex: number, cellIndex: number) {
-    this.columnValues[rowIndex][cellIndex] = this.form.value[columnName];
-    this.inEditCell = undefined;
+  clearSelection() {
+    this.isEditMode = false;
+    this.selectedCellCoordinates = undefined;
+
+    this.data.filter(d => d.selected).forEach(dataCell => {
+      dataCell.selected = false;
+    });
   }
 
-  mouseDownCall(e: Event, cell: Element) {
+  cellClick(e: Event, rowIndex: number, columnIndex: number) {
+    if (this.selectedCellCoordinates?.rowIndex === rowIndex && this.selectedCellCoordinates.columnIndex === columnIndex) return;
+    this.clearSelection();
+    this.table?.focus();
     this.isMouseDown = true;
-
-    let selectedCells = this.table?.getElementsByClassName("selected");
-    if (selectedCells) {
-      Array.from(selectedCells).forEach(function (cell) {
-        cell.classList.remove("selected");
-      });
-    }
+    this.isEditMode = false;
+    this.selectedCellCoordinates = { rowIndex: rowIndex, columnIndex: columnIndex };
 
     let event = e as MouseEvent;
 
     if (event.shiftKey) {
-      this.selectTo(cell);
+      this.selectTo(rowIndex, columnIndex);
     } else {
-      cell.classList.add("selected");
-      let row = cell.parentElement;
-      if (!row) return;
-      this.startCellIndex = ([].slice.call(cell.parentElement?.children) as Element[]).indexOf(cell);
-      this.startRowIndex = ([].slice.call(row.parentElement?.children) as Element[]).indexOf(row) - 1;
+      let cellData = this.getDataCell(rowIndex, columnIndex);
+      if (cellData) cellData.selected = true;
+
+      this.startCellIndex = columnIndex;
+      this.startRowIndex = rowIndex;
     }
 
     return false; // prevent text selection
   };
 
-  selectTo(cell: Element) {
-
-    let row = cell.parentElement;
-    if (!row) return;
-    let cellIndex = ([].slice.call(cell.parentElement?.children) as Element[]).indexOf(cell);
-    let rowIndex = ([].slice.call(row.parentElement?.children) as Element[]).indexOf(row) - 1;
-
+  selectTo(rowIndex: number, columnIndex: number) {
     let rowStart, rowEnd, cellStart, cellEnd;
 
     if (rowIndex < this.startRowIndex) {
@@ -198,26 +220,22 @@ export class AppComponent implements AfterViewInit {
       rowEnd = rowIndex;
     }
 
-    if (cellIndex < this.startCellIndex) {
-      cellStart = cellIndex;
+    if (columnIndex < this.startCellIndex) {
+      cellStart = columnIndex;
       cellEnd = this.startCellIndex;
     } else {
       cellStart = this.startCellIndex;
-      cellEnd = cellIndex;
+      cellEnd = columnIndex;
     }
 
     this.endCellIndex = cellEnd;
     this.endRowIndex = rowEnd;
 
     for (var i = rowStart; i <= rowEnd; i++) {
-      let rowsList = this.table?.querySelectorAll("tr");
-      if (!rowsList) return;
-      let rows = Array.from(rowsList);
-      let rowCellsList = rows[i].querySelectorAll("td");
-      let rowCells = Array.from(rowCellsList);
 
       for (var j = cellStart; j <= cellEnd; j++) {
-        rowCells[j].classList.add("selected");
+        let cellData = this.getDataCell(i, j);
+        if (cellData) cellData.selected = true;
       }
     }
   }

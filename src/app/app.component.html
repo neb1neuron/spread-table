@@ -1,27 +1,49 @@
+<div class="form-group">
+  <label for="columnWidth">Column Width</label>
+  <input type="number"
+         class="form-control col-1"
+         id="columnWidth"
+         placeholder="Enter email"
+         [(ngModel)]="columnWidth">
+</div>
+
 <div class="wrapper"
      [formGroup]="form">
   <table #spreadTable
          tabindex="-1"
          class="spread-table table"
          id="spreadTable">
-    <thead>
-      <th *ngFor="let columnName of columnNames">{{columnName}}</th>
+    <thead class="spread-thead">
+      <tr>
+        <th *ngFor="let columnName of columnNames">{{columnName}}</th>
+      </tr>
+      <tr>
+        <th *ngFor="let columnName of columnNames"><input class="w-100"
+                 type="text"
+                 disabled /></th>
+      </tr>
     </thead>
-    <tr class="spread-row"
-        *ngFor="let row of [].constructor(rowsNumber);let i = index">
-      <td #spreadCell
-          class="spread-cell"
-          [ngClass]="isInEditMode(i,j) ? 'no-padding':''"
-          *ngFor="let item of [].constructor(columnsNumber);let j = index">
-        <div class="spread-cell-value"
-             *ngIf="!isInEditMode(i,j)">{{columnValues[i][j]}}</div>
-        <input *ngIf="isInEditMode(i,j)"
-               style="width:100%;"
-               type="text"
-               class="cell-in-edit"
-               (blur)="setCellValue(columnNames[j],i,j)"
-               [formControlName]="columnNames[j]" />
-      </td>
-    </tr>
+    <tbody class="spread-tbody">
+      <tr class="spread-row"
+          *ngFor="let row of [].constructor(rowsNumber);let i = index">
+        <td #spreadCell
+            class="spread-cell"
+            (dblclick)="doubleClick(i,j)"
+            (mousedown)="cellClick($event,i,j)"
+            (mouseover)="mouseOverCall(i,j)"
+            [ngClass]="[isInEditMode(i,j) ? 'no-padding':'',
+            ((selectedCellCoordinates?.rowIndex === i && selectedCellCoordinates?.columnIndex === j) ||getDataCell(i,j)?.selected ) ? 'selected' : '']"
+            *ngFor="let item of [].constructor(columnsNumber);let j = index">
+          <div class="spread-cell-value text-truncate"
+               [style.width]="columnWidth + 'px'"
+               *ngIf="!isInEditMode(i,j)">{{getDataCell(i,j)?.value}}</div>
+          <input *ngIf="isInEditMode(i,j)"
+                 type="text"
+                 class="cell-in-edit w-100"
+                 (blur)="setCellValue(columnNames[j],i,j)"
+                 [formControlName]="columnNames[j]" />
+        </td>
+      </tr>
+    </tbody>
   </table>
 </div>
