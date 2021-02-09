@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, Input, OnInit } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
-import { Cell } from 'src/app/models/cell.model';
+import { Cell, Row } from 'src/app/models/cell.model';
 import { UndoRedoService } from 'src/app/services/undo-redo.service';
 
 @Component({
@@ -16,11 +16,12 @@ export class SpreadTableComponent implements AfterViewInit {
   // this needs to be a more complex object that contains dispayName and propertyName to be able to map from the rawData json
   @Input() columnNames: string[] = [];
 
-  rowsNumber = 100;
+  rowsNumber = 1000;
+  rowsNumbers = [].constructor(this.rowsNumber);
   columnsNumber = 10;
   focus = true;
 
-  data: Cell[] = [];
+  data: Row[] = [];
   form = new FormGroup({});
 
   isMouseDown = false;
@@ -41,9 +42,11 @@ export class SpreadTableComponent implements AfterViewInit {
     }
 
     for (let i = 0; i < this.rowsNumber; i++) {
+      let row = new Row({ rowIndex: i, cells: [] });
       for (let j = 0; j < this.columnsNumber; j++) {
-        this.data.push({ value: Math.random().toString(36).substr(0, 5), rowIndex: i, columnIndex: j });
+        row.cells.push({ value: Math.random().toString(36).substr(0, 5), rowIndex: i, columnIndex: j });
       }
+      this.data.push(row);
     }
   }
 
@@ -64,34 +67,34 @@ export class SpreadTableComponent implements AfterViewInit {
     this.isMouseDown = false;
   }
 
-  mouseOverCall(rowIndex: number, columnIndex: number) {
-    if (!this.isMouseDown || this.isInEditMode(rowIndex, columnIndex)) return;
+  mouseOverCall(cell: Cell) {
+    if (!this.isMouseDown || this.isInEditMode(cell)) return;
 
     this.clearSelection();
 
-    this.selectTo(rowIndex, columnIndex);
+    this.selectTo(cell.rowIndex, cell.columnIndex);
   }
 
   getDataCell(rowIndex: number, columnIndex: number): Cell | undefined {
-    return this.data.find(d => d.rowIndex === rowIndex && d.columnIndex === columnIndex);
+    return this.data.find(d => d.rowIndex === rowIndex)?.cells.find(c => c.columnIndex === columnIndex);
   }
 
-  doubleClick(rowIndex: number, columnIndex: number) {
-    if (this.selectedCellCoordinates?.rowIndex === rowIndex && this.selectedCellCoordinates.columnIndex === columnIndex && this.isEditMode) return;
+  doubleClick(cell: Cell) {
+    if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex && this.selectedCellCoordinates.columnIndex === cell.columnIndex && this.isEditMode) return;
     this.clearSelection();
     this.isMouseDown = false;
     this.isEditMode = true;
     this.focus = true;
-    this.selectedCellCoordinates = { rowIndex: rowIndex, columnIndex: columnIndex };
+    this.selectedCellCoordinates = { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex };
 
     this.form = new FormGroup({});
 
-    this.data.filter(d => d.rowIndex === rowIndex).forEach((cellData, index) => {
-      this.form.addControl(this.columnNames[index], new FormControl(this.getDataCell(rowIndex, columnIndex)?.value));
+    this.data[cell.rowIndex].cells.forEach((cellData, index) => {
+      this.form.addControl(this.columnNames[index], new FormControl(cellData?.value));
     });
 
-    this.startCellIndex = columnIndex;
-    this.startRowIndex = rowIndex;
+    this.startCellIndex = cell.columnIndex;
+    this.startRowIndex = cell.rowIndex;
 
     if (this.focus) {
       this.focus = false;
@@ -104,12 +107,12 @@ export class SpreadTableComponent implements AfterViewInit {
     }
   }
 
-  isInEditMode(rowIndex: number, columnIndex: number) {
+  isInEditMode(cell: Cell) {
     if (!this.selectedCellCoordinates) return false;
     const cellIndex2 = this.selectedCellCoordinates.columnIndex;
     const rowIndex2 = this.selectedCellCoordinates.rowIndex;
 
-    return rowIndex === rowIndex2 && columnIndex === cellIndex2 && this.isEditMode;
+    return cell.rowIndex === rowIndex2 && cell.columnIndex === cellIndex2 && this.isEditMode;
   }
 
   keyDownCall(e: Event) {
@@ -153,7 +156,8 @@ export class SpreadTableComponent implements AfterViewInit {
   }
 
   cutSelectedCellsValues() {
-    let selectedCells = this.data.filter(d => d.selected);
+    let selectedCells: Cell[] = [];
+    this.data.forEach(r => selectedCells.concat(r.cells.filter(d => d.selected)));
 
     selectedCells.forEach(cell => {
       let cellData = this.getDataCell(cell.rowIndex, cell.columnIndex);
@@ -162,16 +166,15 @@ export class SpreadTableComponent implements AfterViewInit {
 
   }
 
-  setCellValue(columnName: string, rowIndex: number, columnIndex: number) {
-    if (this.getDataCell(rowIndex, columnIndex)?.value !== this.form.value[columnName]) {
+  setCellValue(columnName: string, cell: Cell) {
+    if (cell.value !== this.form.value[columnName]) {
       this.undoRedoService.setChange({
         coordinates:
-          { rowIndex: rowIndex, columnIndex: columnIndex },
-        beforeValue: this.getDataCell(rowIndex, columnIndex)?.value,
+          { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
+        beforeValue: cell.value,
         afterValue: this.form.value[columnName]
       });
-      let cellData = this.getDataCell(rowIndex, columnIndex);
-      if (cellData) cellData.value = this.form.value[columnName];
+      cell.value = this.form.value[columnName];
     }
     this.isEditMode = false;
     this.selectedCellCoordinates = undefined;
@@ -181,29 +184,30 @@ export class SpreadTableComponent implements AfterViewInit {
     this.isEditMode = false;
     this.selectedCellCoordinates = undefined;
 
-    this.data.filter(d => d.selected).forEach(dataCell => {
+    let selectedCells: Cell[] = this.data.filter(r => r.cells.filter(d => d.selected).length > 0).flatMap(r => r.cells.filter(c => c.selected));
+
+    selectedCells.forEach(dataCell => {
       dataCell.selected = false;
     });
   }
 
-  cellClick(e: Event, rowIndex: number, columnIndex: number) {
-    if (this.selectedCellCoordinates?.rowIndex === rowIndex && this.selectedCellCoordinates.columnIndex === columnIndex) return;
+  cellClick(e: Event, cell: Cell) {
+    if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex && this.selectedCellCoordinates.columnIndex === cell.columnIndex) return;
     this.clearSelection();
     this.table?.focus();
     this.isMouseDown = true;
     this.isEditMode = false;
-    this.selectedCellCoordinates = { rowIndex: rowIndex, columnIndex: columnIndex };
+    this.selectedCellCoordinates = { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex };
 
     let event = e as MouseEvent;
 
     if (event.shiftKey) {
-      this.selectTo(rowIndex, columnIndex);
+      this.selectTo(cell.rowIndex, cell.columnIndex);
     } else {
-      let cellData = this.getDataCell(rowIndex, columnIndex);
-      if (cellData) cellData.selected = true;
+      cell.selected = true;
 
-      this.startCellIndex = columnIndex;
-      this.startRowIndex = rowIndex;
+      this.startCellIndex = cell.columnIndex;
+      this.startRowIndex = cell.rowIndex;
     }
 
     return false; // prevent text selection

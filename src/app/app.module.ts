@@ -7,6 +7,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SpreadTableComponent } from './core/components/spread-table/spread-table.component';
+import { VirtualScrollerModule } from 'ngx-virtual-scroller';
 
 @NgModule({
   declarations: [
@@ -20,6 +21,7 @@ import { SpreadTableComponent } from './core/components/spread-table/spread-tabl
     FormsModule,
     ReactiveFormsModule,
     NgbModule,
+    VirtualScrollerModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

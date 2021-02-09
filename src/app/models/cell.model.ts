@@ -11,3 +11,15 @@ export class Cell {
   }
 }
 
+export class Row {
+  public cells: Cell[] = [];
+  public rowIndex = 0;
+  public selected?= false;
+  public disabled?= false;
+  public hasErrors?= false;
+
+  constructor(pagObj?: Row) {
+    Object.assign(this, pagObj);
+  }
+}
+

@@ -1,40 +1,50 @@
-<div class="wrapper"
-     [formGroup]="form">
-  <table #spreadTable
-         tabindex="-1"
-         class="spread-table table"
-         id="spreadTable">
-    <thead class="spread-thead">
-      <tr>
-        <th *ngFor="let columnName of columnNames">{{columnName}}</th>
-      </tr>
-      <tr>
-        <th *ngFor="let columnName of columnNames"><input class="w-100"
-                 type="text"
-                 disabled /></th>
-      </tr>
-    </thead>
-    <tbody class="spread-tbody">
-      <tr class="spread-row"
-          *ngFor="let row of [].constructor(rowsNumber);let i = index">
-        <td #spreadCell
-            class="spread-cell"
-            (dblclick)="doubleClick(i,j)"
-            (mousedown)="cellClick($event,i,j)"
-            (mouseover)="mouseOverCall(i,j)"
-            [ngClass]="[isInEditMode(i,j) ? 'no-padding':'',
-            ((selectedCellCoordinates?.rowIndex === i && selectedCellCoordinates?.columnIndex === j) ||getDataCell(i,j)?.selected ) ? 'selected' : '']"
-            *ngFor="let item of [].constructor(columnsNumber);let j = index">
-          <div class="spread-cell-value text-truncate"
-               [style.width]="columnWidth + 'px'"
-               *ngIf="!isInEditMode(i,j)">{{getDataCell(i,j)?.value}}</div>
-          <input *ngIf="isInEditMode(i,j)"
-                 type="text"
-                 class="cell-in-edit w-100"
-                 (blur)="setCellValue(columnNames[j],i,j)"
-                 [formControlName]="columnNames[j]" />
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+<virtual-scroller #scroll
+                  [stripedTable]="true"
+                  [enableUnequalChildrenSizes]="true"
+                  [items]="data">
+  <div class="wrapper"
+       [formGroup]="form">
+    <table #spreadTable
+           tabindex="-1"
+           class="spread-table table"
+           id="spreadTable">
+      <thead #header
+             class="spread-thead">
+        <tr>
+          <th>Index</th>
+          <th *ngFor="let columnName of columnNames">{{columnName}}</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th *ngFor="let columnName of columnNames"><input class="w-100"
+                   type="text"
+                   disabled /></th>
+        </tr>
+      </thead>
+      <tbody #container
+             class="spread-tbody">
+        <tr class="spread-row"
+            *ngFor="let row of scroll.viewPortItems;let i = index">
+          <td style="width: 10px;min-width: 10px;">{{row.rowIndex}}</td>
+          <td #spreadCell
+              class="spread-cell"
+              (dblclick)="doubleClick(row.cells[j])"
+              (mousedown)="cellClick($event,row.cells[j])"
+              (mouseover)="mouseOverCall(row.cells[j])"
+              [ngClass]="[isInEditMode(row.cells[j]) ? 'no-padding':'',
+            row.cells[j]?.selected  ? 'selected' : '']"
+              *ngFor="let item of [].constructor(columnsNumber);let j = index">
+            <div class="spread-cell-value text-truncate"
+                 [style.width]="columnWidth + 'px'"
+                 *ngIf="!isInEditMode(row.cells[j])">{{row.cells[j].value}}</div>
+            <input *ngIf="isInEditMode(row.cells[j])"
+                   type="text"
+                   class="cell-in-edit w-100"
+                   (blur)="setCellValue(columnNames[j],row.cells[j])"
+                   [formControlName]="columnNames[j]" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</virtual-scroller>
