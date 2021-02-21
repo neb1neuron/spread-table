@@ -1,0 +1,11 @@
+<div class="context-menu">
+  <div class="menu-link"
+       *ngFor="let menuItem of contextMenuItems; index as i"
+       (click)="onContextMenuClick($event, menuItem.menuEvent)">
+    <i *ngIf="menuItem.faIconName"
+       class="{{menuItem.faIconName}}"></i>
+    {{ menuItem.menuText }}
+    <span class="shortcut"
+          *ngIf="menuItem?.shortcut">{{menuItem?.shortcut}}</span>
+  </div>
+</div>

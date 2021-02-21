@@ -1,7 +1,8 @@
-import { AfterViewInit, Component, Input, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, Input, OnInit, ViewChild } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Cell, Row } from 'src/app/models/cell.model';
 import { UndoRedoService } from 'src/app/services/undo-redo.service';
+import { ContextMenuModel } from '../../models/context-menu.model';
 
 @Component({
   selector: 'spread-table',
@@ -16,7 +17,7 @@ export class SpreadTableComponent implements AfterViewInit {
   // this needs to be a more complex object that contains dispayName and propertyName to be able to map from the rawData json
   @Input() columnNames: string[] = [];
 
-  rowsNumber = 1000;
+  rowsNumber = 100;
   rowsNumbers = [].constructor(this.rowsNumber);
   columnsNumber = 10;
   focus = true;
@@ -32,7 +33,56 @@ export class SpreadTableComponent implements AfterViewInit {
   selectedCellCoordinates?: { rowIndex: number, columnIndex: number } = undefined;
   isEditMode = false;
 
-  constructor(private undoRedoService: UndoRedoService) {
+  isDisplayContextMenu: boolean = false;
+  rightClickMenuItems: Array<ContextMenuModel> = [{
+    faIconName: 'far fa-copy',
+    menuText: 'Copy',
+    menuEvent: 'Handle copy',
+    shortcut: 'Ctrl+C'
+  },
+  {
+    faIconName: 'far fa-clipboard',
+    menuText: 'Paste',
+    menuEvent: 'Handle paste',
+    shortcut: 'Ctrl+V'
+  }, {
+    faIconName: 'fas fa-undo',
+    menuText: 'Undo',
+    menuEvent: 'Handle undo',
+    shortcut: 'Ctrl+Z'
+  }, {
+    faIconName: 'fas fa-redo',
+    menuText: 'Redo',
+    menuEvent: 'Handle redo',
+    shortcut: 'Ctrl+Y'
+  },];
+  contextMenuPosition: any;
+
+  //@ViewChild('contextMenu') contextMenu: ElementRef | undefined;
+  @ViewChild('contextMenu', { read: ElementRef }) set contextMenu(element: ElementRef) {
+    if (element) {
+      const wrapper = this.table?.parentElement?.parentElement?.parentElement;
+      element.nativeElement.setAttribute('style', `position: fixed;left: 0px;top: 0px;`);
+      let wrapperWidth = 9999999;
+      let wrapperHeight = 9999999;
+
+      if (wrapper) {
+        wrapperWidth = wrapper.clientWidth + wrapper.offsetLeft;
+        wrapperHeight = wrapper.clientHeight + wrapper.offsetTop;
+      }
+      const contextMenuWidth = element?.nativeElement.clientWidth;
+      const contextMenuHeight = element?.nativeElement.clientHeight;
+
+      this.contextMenuPosition.x = this.contextMenuPosition.x + contextMenuWidth > wrapperWidth ? this.contextMenuPosition.x - contextMenuWidth : this.contextMenuPosition.x;
+      this.contextMenuPosition.y = this.contextMenuPosition.y + contextMenuHeight > wrapperHeight ? this.contextMenuPosition.y - contextMenuHeight : this.contextMenuPosition.y;
+
+      element.nativeElement.setAttribute('style', `position: fixed;left: ${this.contextMenuPosition.x}px;top: ${this.contextMenuPosition.y}px;`);
+    } else {
+      this.contextMenuPosition = {};
+    }
+  }
+
+  constructor(private undoRedoService: UndoRedoService,) {
     this.createData();
   }
 
@@ -52,6 +102,8 @@ export class SpreadTableComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.table = document.getElementById('spreadTable');
+
+    document.addEventListener('scroll', (e) => this.isDisplayContextMenu = false, true);
 
     this.table?.addEventListener("selectstart", () => {
       return false;
@@ -157,7 +209,7 @@ export class SpreadTableComponent implements AfterViewInit {
 
   cutSelectedCellsValues() {
     let selectedCells: Cell[] = [];
-    this.data.forEach(r => selectedCells.concat(r.cells.filter(d => d.selected)));
+    this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
 
     selectedCells.forEach(cell => {
       let cellData = this.getDataCell(cell.rowIndex, cell.columnIndex);
@@ -192,6 +244,7 @@ export class SpreadTableComponent implements AfterViewInit {
   }
 
   cellClick(e: Event, cell: Cell) {
+    this.isDisplayContextMenu = false;
     if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex && this.selectedCellCoordinates.columnIndex === cell.columnIndex) return;
     this.clearSelection();
     this.table?.focus();
@@ -242,6 +295,40 @@ export class SpreadTableComponent implements AfterViewInit {
         if (cellData) cellData.selected = true;
       }
     }
+  }
+
+  // context menu
+  async openContextMenu(e: Event, cell: Cell) {
+    const event = e as MouseEvent;
+
+    if (event.ctrlKey) {
+      return true;
+    }
+    // To prevent browser's default contextmenu
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (this.isEditMode) {
+      return false;
+    }
+
+    this.isDisplayContextMenu = true;
+
+    this.contextMenuPosition = { x: event.clientX, y: event.clientY };
+    return true;
+  }
+
+  getRightClickMenuStyle() {
+    // return {
+    //   position: 'fixed',
+    //   left: `${this.contextMenuPosition.x}px`,
+    //   top: `${this.contextMenuPosition.y}px`
+    // }
+  }
+
+  handleMenuItemClick(event: any) {
+    this.isDisplayContextMenu = false;
+    console.log(event.data);
   }
 
 }

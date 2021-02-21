@@ -2,7 +2,8 @@
                   [stripedTable]="true"
                   [enableUnequalChildrenSizes]="true"
                   [items]="data">
-  <div class="wrapper"
+  <div #spreadWrapper
+       class="wrapper"
        [formGroup]="form">
     <table #spreadTable
            tabindex="-1"
@@ -28,6 +29,7 @@
           <td style="width: 10px;min-width: 10px;">{{row.rowIndex}}</td>
           <td #spreadCell
               class="spread-cell"
+              (contextmenu)="openContextMenu($event,row.cells[j]);"
               (dblclick)="doubleClick(row.cells[j])"
               (mousedown)="cellClick($event,row.cells[j])"
               (mouseover)="mouseOverCall(row.cells[j])"
@@ -48,3 +50,7 @@
     </table>
   </div>
 </virtual-scroller>
+<app-context-menu #contextMenu
+                  *ngIf="rightClickMenuItems.length > 0 && isDisplayContextMenu"
+                  [contextMenuItems]="rightClickMenuItems"
+                  (onContextMenuItemClick)="handleMenuItemClick($event)"></app-context-menu>
