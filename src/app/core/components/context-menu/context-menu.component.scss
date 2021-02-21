@@ -5,10 +5,16 @@
   padding: 10px 20px;
 
   .menu-link {
+    font-weight: normal;
     line-height: 40px;
 
     &.enabled {
       cursor: pointer;
+    }
+
+    &:hover.enabled {
+      font-weight: 600;
+      transition: font-weight .3s;
     }
   }
 
