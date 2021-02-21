@@ -1,7 +1,8 @@
 <div class="context-menu">
   <div class="menu-link"
+       [ngClass]="menuItem.disabled?'disabled':'enabled'"
        *ngFor="let menuItem of contextMenuItems; index as i"
-       (click)="onContextMenuClick($event, menuItem.menuEvent)">
+       (click)="!menuItem.disabled?onContextMenuClick($event, menuItem.menuEvent):false">
     <i *ngIf="menuItem.faIconName"
        class="{{menuItem.faIconName}}"></i>
     {{ menuItem.menuText }}

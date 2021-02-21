@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, HostListener, Input, OnInit, View
 import { FormGroup, FormControl } from '@angular/forms';
 import { Cell, Row } from 'src/app/models/cell.model';
 import { UndoRedoService } from 'src/app/services/undo-redo.service';
+import { EnumType } from 'typescript';
 import { ContextMenuModel } from '../../models/context-menu.model';
 
 @Component({
@@ -34,31 +35,46 @@ export class SpreadTableComponent implements AfterViewInit {
   isEditMode = false;
 
   isDisplayContextMenu: boolean = false;
-  rightClickMenuItems: Array<ContextMenuModel> = [{
+
+  contextMenuActions = {
+    copy: 'copy',
+    cut: 'cut',
+    paste: 'paste',
+    undo: 'undo',
+    redo: 'redo',
+  };
+
+  contextMenuItems: Array<ContextMenuModel> = [{
     faIconName: 'far fa-copy',
     menuText: 'Copy',
-    menuEvent: 'Handle copy',
+    disabled: true,
+    menuEvent: this.contextMenuActions.copy,
     shortcut: 'Ctrl+C'
+  },
+  {
+    faIconName: 'fas fa-cut',
+    menuText: 'Cut',
+    menuEvent: this.contextMenuActions.cut,
+    shortcut: 'Ctrl+X'
   },
   {
     faIconName: 'far fa-clipboard',
     menuText: 'Paste',
-    menuEvent: 'Handle paste',
+    menuEvent: this.contextMenuActions.paste,
     shortcut: 'Ctrl+V'
   }, {
     faIconName: 'fas fa-undo',
     menuText: 'Undo',
-    menuEvent: 'Handle undo',
+    menuEvent: this.contextMenuActions.undo,
     shortcut: 'Ctrl+Z'
   }, {
     faIconName: 'fas fa-redo',
     menuText: 'Redo',
-    menuEvent: 'Handle redo',
+    menuEvent: this.contextMenuActions.redo,
     shortcut: 'Ctrl+Y'
   },];
   contextMenuPosition: any;
 
-  //@ViewChild('contextMenu') contextMenu: ElementRef | undefined;
   @ViewChild('contextMenu', { read: ElementRef }) set contextMenu(element: ElementRef) {
     if (element) {
       const wrapper = this.table?.parentElement?.parentElement?.parentElement;
@@ -244,6 +260,10 @@ export class SpreadTableComponent implements AfterViewInit {
   }
 
   cellClick(e: Event, cell: Cell) {
+    let event = e as MouseEvent;
+    if (event.button === 2 && cell.selected) {
+      return;
+    }
     this.isDisplayContextMenu = false;
     if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex && this.selectedCellCoordinates.columnIndex === cell.columnIndex) return;
     this.clearSelection();
@@ -251,8 +271,6 @@ export class SpreadTableComponent implements AfterViewInit {
     this.isMouseDown = true;
     this.isEditMode = false;
     this.selectedCellCoordinates = { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex };
-
-    let event = e as MouseEvent;
 
     if (event.shiftKey) {
       this.selectTo(cell.rowIndex, cell.columnIndex);
@@ -318,17 +336,21 @@ export class SpreadTableComponent implements AfterViewInit {
     return true;
   }
 
-  getRightClickMenuStyle() {
-    // return {
-    //   position: 'fixed',
-    //   left: `${this.contextMenuPosition.x}px`,
-    //   top: `${this.contextMenuPosition.y}px`
-    // }
-  }
-
   handleMenuItemClick(event: any) {
     this.isDisplayContextMenu = false;
     console.log(event.data);
+    switch (event.data) {
+      case this.contextMenuActions.cut: {
+        this.cutSelectedCellsValues();
+        break;
+      }
+      case this.contextMenuActions.paste: {
+        // paste action
+        break
+      }
+      default:
+        break;
+    }
   }
 
 }

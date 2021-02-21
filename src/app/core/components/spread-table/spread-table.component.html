@@ -51,6 +51,6 @@
   </div>
 </virtual-scroller>
 <app-context-menu #contextMenu
-                  *ngIf="rightClickMenuItems.length > 0 && isDisplayContextMenu"
-                  [contextMenuItems]="rightClickMenuItems"
+                  *ngIf="contextMenuItems.length > 0 && isDisplayContextMenu"
+                  [contextMenuItems]="contextMenuItems"
                   (onContextMenuItemClick)="handleMenuItemClick($event)"></app-context-menu>

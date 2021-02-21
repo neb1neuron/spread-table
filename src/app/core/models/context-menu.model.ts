@@ -3,4 +3,5 @@ export class ContextMenuModel {
   menuText: string = '';
   menuEvent: string = '';
   shortcut?: string = '';
+  disabled?= false;
 }

@@ -5,8 +5,16 @@
   padding: 10px 20px;
 
   .menu-link {
-    cursor: pointer;
     line-height: 40px;
+
+    &.enabled {
+      cursor: pointer;
+    }
+  }
+
+  .menu-link.disabled {
+    user-select: none;
+    color: rgb(179, 179, 179);
   }
 
   .shortcut {
