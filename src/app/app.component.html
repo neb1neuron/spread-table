@@ -1,12 +1,5 @@
-<div class="p-3 form-group">
-  <label for="columnWidth">Columns Width</label>
-  <input type="number"
-         class="form-control col-1"
-         id="columnWidth"
-         placeholder="Enter email"
-         [(ngModel)]="columnWidth">
-</div>
 <div class="p-3 w-100"
      style="height: 800px;">
-  <spread-table [columnWidth]="columnWidth"></spread-table>
+  <spread-table [columns]="columns"
+                [rawData]="data"></spread-table>
 </div>

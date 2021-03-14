@@ -13,11 +13,12 @@
              class="spread-thead">
         <tr>
           <th>Index</th>
-          <th *ngFor="let columnName of columnNames">{{columnName}}</th>
+          <th [width]="column.width || '20px'"
+              *ngFor="let column of columns">{{column.displayName}}</th>
         </tr>
         <tr>
           <th></th>
-          <th *ngFor="let columnName of columnNames"><input class="w-100"
+          <th *ngFor="let column of columns"><input class="w-100"
                    type="text"
                    disabled /></th>
         </tr>
@@ -26,24 +27,24 @@
              class="spread-tbody">
         <tr class="spread-row"
             *ngFor="let row of scroll.viewPortItems;let i = index">
-          <td style="width: 10px;min-width: 10px;">{{row.rowIndex}}</td>
+          <td style="width: 10px;">{{row.rowIndex}}</td>
           <td #spreadCell
               class="spread-cell"
               (contextmenu)="openContextMenu($event,row.cells[j]);"
-              (dblclick)="doubleClick(row.cells[j])"
+              (dblclick)="column.editable ? doubleClick(row.cells[j]) : ''"
               (mousedown)="cellClick($event,row.cells[j])"
               (mouseover)="mouseOverCall(row.cells[j])"
               [ngClass]="[isInEditMode(row.cells[j]) ? 'no-padding':'',
             row.cells[j]?.selected  ? 'selected' : '']"
-              *ngFor="let item of [].constructor(columnsNumber);let j = index">
+              *ngFor="let column of columns;let j = index">
             <div class="spread-cell-value text-truncate"
-                 [style.width]="columnWidth + 'px'"
-                 *ngIf="!isInEditMode(row.cells[j])">{{row.cells[j].value}}</div>
+                 [style.width]="column.width || '100px'"
+                 *ngIf="!isInEditMode(row.cells[j])">{{getCellValue(row,column.name)}}</div>
             <input *ngIf="isInEditMode(row.cells[j])"
                    type="text"
                    class="cell-in-edit w-100"
-                   (blur)="setCellValue(columnNames[j],row.cells[j])"
-                   [formControlName]="columnNames[j]" />
+                   (blur)="setCellValue(columns[j],row.cells[j])"
+                   [formControlName]="columns[j].name" />
           </td>
         </tr>
       </tbody>

@@ -1,4 +1,5 @@
 export class Cell {
+  public columnName = '';
   public value?: any;
   public selected?= false;
   public disabled?= false;
@@ -6,8 +7,8 @@ export class Cell {
   public columnIndex = 0;
   public errors?: string[] = [];
 
-  constructor(pagObj?: Cell) {
-    Object.assign(this, pagObj);
+  constructor(obj?: Cell) {
+    Object.assign(this, obj);
   }
 }
 
@@ -18,8 +19,22 @@ export class Row {
   public disabled?= false;
   public hasErrors?= false;
 
-  constructor(pagObj?: Row) {
-    Object.assign(this, pagObj);
+  constructor(obj?: Row) {
+    Object.assign(this, obj);
+  }
+}
+
+export class Column {
+  public name = '';
+  public displayName?= 'N/A';
+  public width?= '100px';
+  public editable?= true;
+
+  constructor(obj?: Column) {
+    Object.assign(this, obj);
+    if (!obj?.displayName) {
+      this.displayName = obj?.name;
+    }
   }
 }
 

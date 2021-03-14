@@ -1,8 +1,7 @@
-import { AfterViewInit, Component, ElementRef, HostListener, Input, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
-import { Cell, Row } from 'src/app/models/cell.model';
-import { UndoRedoService } from 'src/app/services/undo-redo.service';
-import { EnumType } from 'typescript';
+import { Cell, Column, Row } from 'src/app/models/cell.model';
+import { Change, UndoRedoService } from 'src/app/services/undo-redo.service';
 import { ContextMenuModel } from '../../models/context-menu.model';
 
 @Component({
@@ -10,20 +9,16 @@ import { ContextMenuModel } from '../../models/context-menu.model';
   templateUrl: './spread-table.component.html',
   styleUrls: ['./spread-table.component.scss']
 })
-export class SpreadTableComponent implements AfterViewInit {
+export class SpreadTableComponent implements AfterViewInit, OnChanges {
   table = document.getElementById('spreadTable');
 
   @Input() columnWidth = 100;
   @Input() rawData: any = null;
   // this needs to be a more complex object that contains dispayName and propertyName to be able to map from the rawData json
-  @Input() columnNames: string[] = [];
-
-  rowsNumber = 100;
-  rowsNumbers = [].constructor(this.rowsNumber);
-  columnsNumber = 10;
-  focus = true;
-
+  @Input() columns: Column[] = [];
   data: Row[] = [];
+
+  focus = true;
   form = new FormGroup({});
 
   isMouseDown = false;
@@ -98,22 +93,25 @@ export class SpreadTableComponent implements AfterViewInit {
     }
   }
 
-  constructor(private undoRedoService: UndoRedoService,) {
-    this.createData();
+  constructor(private undoRedoService: UndoRedoService,) { }
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.rawData.currentValue) {
+      for (let i = 0; i < this.rawData.length; i++) {
+        let row = new Row({ rowIndex: i, cells: [] });
+        const keys = Object.keys(this.rawData[0]);
+
+        for (let j = 0; j < this.columns.length; j++) {
+          row.cells.push({ columnName: this.columns[j].name, value: this.rawData[i][this.columns[j].name], rowIndex: i, columnIndex: j });
+        }
+        this.data.push(row);
+      }
+
+      console.log(this.data);
+    }
   }
 
-  createData() {
-    for (let j = 0; j < this.columnsNumber; j++) {
-      this.columnNames.push('Column ' + j);
-    }
-
-    for (let i = 0; i < this.rowsNumber; i++) {
-      let row = new Row({ rowIndex: i, cells: [] });
-      for (let j = 0; j < this.columnsNumber; j++) {
-        row.cells.push({ value: Math.random().toString(36).substr(0, 5), rowIndex: i, columnIndex: j });
-      }
-      this.data.push(row);
-    }
+  getCellValue(row: Row, columnName: string) {
+    return row.cells.find(c => c.columnName === columnName)?.value;
   }
 
   ngAfterViewInit() {
@@ -143,8 +141,8 @@ export class SpreadTableComponent implements AfterViewInit {
     this.selectTo(cell.rowIndex, cell.columnIndex);
   }
 
-  getDataCell(rowIndex: number, columnIndex: number): Cell | undefined {
-    return this.data.find(d => d.rowIndex === rowIndex)?.cells.find(c => c.columnIndex === columnIndex);
+  getDataCell(rowIndex: number, columnIndex: number): Cell {
+    return this.data.find(d => d.rowIndex === rowIndex)?.cells.find(c => c.columnIndex === columnIndex) || new Cell;
   }
 
   doubleClick(cell: Cell) {
@@ -157,8 +155,8 @@ export class SpreadTableComponent implements AfterViewInit {
 
     this.form = new FormGroup({});
 
-    this.data[cell.rowIndex].cells.forEach((cellData, index) => {
-      this.form.addControl(this.columnNames[index], new FormControl(cellData?.value));
+    this.columns.forEach((column) => {
+      this.form.addControl(column.name, new FormControl(this.getCellValue(this.data[cell.rowIndex], column.name)));
     });
 
     this.startCellIndex = cell.columnIndex;
@@ -194,32 +192,127 @@ export class SpreadTableComponent implements AfterViewInit {
       e.preventDefault();
     }
 
+    if (event.ctrlKey && event.key === 'c') {
+      this.copySelectedCellsValues();
+
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    if (event.ctrlKey && event.key === 'v') {
+      this.pasteSelectedCellsValues();
+
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    // if (!this.isEditMode) {
+    //   switch (event.key) {
+    //     case 'ArrowLeft':
+    //       if (this.selectedCellCoordinates) {
+    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+    //         let nextCell = null;
+    //         if (this.selectedCellCoordinates.columnIndex - 1 >= 0) {
+    //           if (currentCell) currentCell.selected = false;
+    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex - 1);
+    //         }
+    //         if (nextCell) {
+    //           nextCell.selected = true;
+    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+    //         }
+    //       }
+    //       break;
+    //     case 'ArrowRight':
+    //       if (this.selectedCellCoordinates) {
+    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+    //         let nextCell = null;
+    //         if (this.selectedCellCoordinates.columnIndex + 1 < this.columns.length) {
+    //           if (currentCell) currentCell.selected = false;
+    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex + 1);
+    //         }
+    //         if (nextCell) {
+    //           nextCell.selected = true;
+    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+    //         }
+    //       }
+    //       break;
+    //     case 'ArrowUp':
+    //       if (this.selectedCellCoordinates) {
+    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+    //         let nextCell = null;
+    //         if (this.selectedCellCoordinates.rowIndex > 0) {
+    //           if (currentCell) currentCell.selected = false;
+    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex - 1, this.selectedCellCoordinates.columnIndex);
+    //         }
+    //         if (nextCell) {
+    //           nextCell.selected = true;
+    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+    //         }
+    //       }
+    //       break;
+    //     case 'ArrowDown':
+    //       if (this.selectedCellCoordinates) {
+    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+    //         let nextCell = null;
+    //         if (this.selectedCellCoordinates.rowIndex + 1 < this.data.length) {
+    //           if (currentCell) currentCell.selected = false;
+    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex + 1, this.selectedCellCoordinates.columnIndex);
+    //         }
+    //         if (nextCell) {
+    //           nextCell.selected = true;
+    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+    //         }
+    //       }
+    //       break;
+    //   }
+    // }
+
     if (event.ctrlKey && event.key === 'z') {
-      const lastChange = this.undoRedoService.undo();
-      if (lastChange) {
-        this.clearSelection();
-        let cellData = this.getDataCell(lastChange.coordinates.rowIndex, lastChange.coordinates.columnIndex);
-        if (cellData) {
-          cellData.value = lastChange.beforeValue;
-          cellData.selected = true;
-        }
-      }
+      this.undo();
     }
 
     if (event.ctrlKey && event.key === 'y') {
-      const lastChange = this.undoRedoService.redo();
-      if (lastChange) {
-        this.clearSelection();
-        let cellData = this.getDataCell(lastChange.coordinates.rowIndex, lastChange.coordinates.columnIndex);
-        if (cellData) {
-          cellData.value = lastChange.beforeValue;
-          cellData.selected = true;
-        }
-      }
+      this.redo();
     }
 
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && this.selectedCellCoordinates && !this.isEditMode) {
+      this.doubleClick(this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex))
+    }
+
+    if (event.key === 'Enter' && this.isEditMode) {
       this.table?.focus();
+    }
+
+    if (event.key === 'Escape' && this.isEditMode) {
+      this.table?.focus();
+    }
+  }
+
+  undo() {
+    const lastChange = this.undoRedoService.undo();
+    if (lastChange) {
+      this.clearSelection();
+      lastChange.forEach(change => {
+        let cellData = this.getDataCell(change.coordinates.rowIndex, change.coordinates.columnIndex);
+        if (cellData) {
+          cellData.value = change.beforeValue;
+          cellData.selected = true;
+        }
+      });
+    }
+  }
+
+  redo() {
+    const lastChange = this.undoRedoService.redo();
+    if (lastChange) {
+      this.clearSelection();
+      lastChange.forEach(change => {
+        let cellData = this.getDataCell(change.coordinates.rowIndex, change.coordinates.columnIndex);
+        if (cellData) {
+          cellData.value = change.beforeValue;
+          cellData.selected = true;
+        }
+      });
     }
   }
 
@@ -227,25 +320,96 @@ export class SpreadTableComponent implements AfterViewInit {
     let selectedCells: Cell[] = [];
     this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
 
+    let changes: Change[] = [];
+    this.copySelectedCellsValues();
+
     selectedCells.forEach(cell => {
       let cellData = this.getDataCell(cell.rowIndex, cell.columnIndex);
-      if (cellData) cellData.value = null;
-    });
-
-  }
-
-  setCellValue(columnName: string, cell: Cell) {
-    if (cell.value !== this.form.value[columnName]) {
-      this.undoRedoService.setChange({
+      changes.push({
         coordinates:
           { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
         beforeValue: cell.value,
-        afterValue: this.form.value[columnName]
+        afterValue: null
       });
-      cell.value = this.form.value[columnName];
+      if (cellData) cellData.value = null;
+    });
+
+    if (changes.length > 0)
+      this.undoRedoService.setChange(changes);
+  }
+
+  copySelectedCellsValues() {
+    let selectedCells: Cell[] = [];
+    this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
+
+    let changes: Change[] = [];
+
+    selectedCells.forEach(cell => {
+      cell.selected = false;
+      changes.push({
+        coordinates:
+          { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
+        beforeValue: cell.value,
+        afterValue: null
+      });
+      setTimeout(() => {
+        cell.selected = true;
+      }, 200);
+    });
+
+    if (changes.length > 0)
+      this.undoRedoService.setCopyData(changes);
+  }
+
+  pasteSelectedCellsValues() {
+    let selectedCells: Cell[] = [];
+    let copyData = this.undoRedoService.paste();
+    if (copyData) {
+      this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
+
+      let changes: Change[] = [];
+
+      selectedCells.forEach(cell => {
+        cell.selected = false;
+        const index = selectedCells?.findIndex(c => c === cell);
+        const value = copyData ? copyData[index]?.beforeValue : null;
+
+        changes.push({
+          coordinates:
+            { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
+          beforeValue: cell.value,
+          afterValue: value
+        });
+
+        cell.value = value;
+
+        setTimeout(() => {
+          cell.selected = true;
+        }, 200);
+      });
+
+      if (changes.length > 0)
+        this.undoRedoService.setChange(changes);
     }
+  }
+
+  setCellValue(column: Column, cell: Cell) {
+    if (cell.value !== this.form.value[column.name]) {
+      this.undoRedoService.setChange([{
+        coordinates:
+          { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
+        beforeValue: cell.value,
+        afterValue: this.form.value[column.name]
+      }]);
+      cell.value = this.form.value[column.name];
+    }
+
     this.isEditMode = false;
-    this.selectedCellCoordinates = undefined;
+
+    if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex &&
+      this.selectedCellCoordinates?.columnIndex === cell.columnIndex) {
+      cell.selected = true;
+    }
   }
 
   clearSelection() {
@@ -266,7 +430,10 @@ export class SpreadTableComponent implements AfterViewInit {
     }
     this.isDisplayContextMenu = false;
     if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex && this.selectedCellCoordinates.columnIndex === cell.columnIndex) return;
-    this.clearSelection();
+    if (!event.ctrlKey) {
+      this.clearSelection();
+    }
+
     this.table?.focus();
     this.isMouseDown = true;
     this.isEditMode = false;
@@ -345,7 +512,15 @@ export class SpreadTableComponent implements AfterViewInit {
         break;
       }
       case this.contextMenuActions.paste: {
-        // paste action
+        this.pasteSelectedCellsValues();
+        break
+      }
+      case this.contextMenuActions.undo: {
+        this.undo();
+        break
+      }
+      case this.contextMenuActions.redo: {
+        this.redo();
         break
       }
       default:
