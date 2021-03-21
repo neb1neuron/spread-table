@@ -206,66 +206,66 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
       e.preventDefault();
     }
 
-    // if (!this.isEditMode) {
-    //   switch (event.key) {
-    //     case 'ArrowLeft':
-    //       if (this.selectedCellCoordinates) {
-    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
-    //         let nextCell = null;
-    //         if (this.selectedCellCoordinates.columnIndex - 1 >= 0) {
-    //           if (currentCell) currentCell.selected = false;
-    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex - 1);
-    //         }
-    //         if (nextCell) {
-    //           nextCell.selected = true;
-    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
-    //         }
-    //       }
-    //       break;
-    //     case 'ArrowRight':
-    //       if (this.selectedCellCoordinates) {
-    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
-    //         let nextCell = null;
-    //         if (this.selectedCellCoordinates.columnIndex + 1 < this.columns.length) {
-    //           if (currentCell) currentCell.selected = false;
-    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex + 1);
-    //         }
-    //         if (nextCell) {
-    //           nextCell.selected = true;
-    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
-    //         }
-    //       }
-    //       break;
-    //     case 'ArrowUp':
-    //       if (this.selectedCellCoordinates) {
-    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
-    //         let nextCell = null;
-    //         if (this.selectedCellCoordinates.rowIndex > 0) {
-    //           if (currentCell) currentCell.selected = false;
-    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex - 1, this.selectedCellCoordinates.columnIndex);
-    //         }
-    //         if (nextCell) {
-    //           nextCell.selected = true;
-    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
-    //         }
-    //       }
-    //       break;
-    //     case 'ArrowDown':
-    //       if (this.selectedCellCoordinates) {
-    //         let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
-    //         let nextCell = null;
-    //         if (this.selectedCellCoordinates.rowIndex + 1 < this.data.length) {
-    //           if (currentCell) currentCell.selected = false;
-    //           nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex + 1, this.selectedCellCoordinates.columnIndex);
-    //         }
-    //         if (nextCell) {
-    //           nextCell.selected = true;
-    //           this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
-    //         }
-    //       }
-    //       break;
-    //   }
-    // }
+    if (!this.isEditMode) {
+      switch (event.key) {
+        case 'ArrowLeft':
+          if (this.selectedCellCoordinates) {
+            let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+            let nextCell = null;
+            if (this.selectedCellCoordinates.columnIndex - 1 >= 0) {
+              if (currentCell) currentCell.selected = false;
+              nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex - 1);
+            }
+            if (nextCell) {
+              nextCell.selected = true;
+              this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+            }
+          }
+          break;
+        case 'ArrowRight':
+          if (this.selectedCellCoordinates) {
+            let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+            let nextCell = null;
+            if (this.selectedCellCoordinates.columnIndex + 1 < this.columns.length) {
+              if (currentCell) currentCell.selected = false;
+              nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex + 1);
+            }
+            if (nextCell) {
+              nextCell.selected = true;
+              this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+            }
+          }
+          break;
+        case 'ArrowUp':
+          if (this.selectedCellCoordinates) {
+            let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+            let nextCell = null;
+            if (this.selectedCellCoordinates.rowIndex > 0) {
+              if (currentCell) currentCell.selected = false;
+              nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex - 1, this.selectedCellCoordinates.columnIndex);
+            }
+            if (nextCell) {
+              nextCell.selected = true;
+              this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+            }
+          }
+          break;
+        case 'ArrowDown':
+          if (this.selectedCellCoordinates) {
+            let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+            let nextCell = null;
+            if (this.selectedCellCoordinates.rowIndex + 1 < this.data.length) {
+              if (currentCell) currentCell.selected = false;
+              nextCell = this.getDataCell(this.selectedCellCoordinates.rowIndex + 1, this.selectedCellCoordinates.columnIndex);
+            }
+            if (nextCell) {
+              nextCell.selected = true;
+              this.selectedCellCoordinates = { rowIndex: nextCell.rowIndex, columnIndex: nextCell.columnIndex };
+            }
+          }
+          break;
+      }
+    }
 
     if (event.ctrlKey && event.key === 'z') {
       this.undo();
@@ -367,12 +367,20 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     if (copyData) {
       this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
 
+      const rowIndexDifference = selectedCells[0].rowIndex - copyData[0].coordinates.rowIndex;
+      const columnIndexDifference = selectedCells[0].columnIndex - copyData[0].coordinates.columnIndex;
+
+
       let changes: Change[] = [];
 
       selectedCells.forEach(cell => {
         cell.selected = false;
-        const index = selectedCells?.findIndex(c => c === cell);
-        const value = copyData ? copyData[index]?.beforeValue : null;
+
+        const cellRowIndex = cell.rowIndex;
+        const cellColumnIndex = cell.columnIndex;
+
+        const value = copyData ? copyData.find(cd => cd.coordinates.rowIndex === cellRowIndex - rowIndexDifference &&
+          cd.coordinates.columnIndex === cellColumnIndex - columnIndexDifference)?.beforeValue : null;
 
         changes.push({
           coordinates:
