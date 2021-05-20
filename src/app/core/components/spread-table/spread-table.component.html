@@ -7,7 +7,7 @@
        [formGroup]="form">
     <table #spreadTable
            tabindex="-1"
-           class="spread-table table"
+           class="spread-table"
            id="spreadTable">
       <thead #header
              class="spread-thead">
@@ -15,12 +15,6 @@
           <th>Index</th>
           <th [width]="column.width || '20px'"
               *ngFor="let column of columns">{{column.displayName}}</th>
-        </tr>
-        <tr>
-          <th></th>
-          <th *ngFor="let column of columns"><input class="w-100"
-                   type="text"
-                   disabled /></th>
         </tr>
       </thead>
       <tbody #container
@@ -37,7 +31,7 @@
               [ngClass]="[isInEditMode(row.cells[j]) ? 'no-padding':'',
             row.cells[j]?.selected  ? 'selected' : '']"
               *ngFor="let column of columns;let j = index">
-            <div class="spread-cell-value text-truncate"
+            <div class="spread-cell-value hideextra"
                  [style.width]="column.width || '100px'"
                  *ngIf="!isInEditMode(row.cells[j])">{{getCellValue(row,column.name)}}</div>
             <input *ngIf="isInEditMode(row.cells[j])"

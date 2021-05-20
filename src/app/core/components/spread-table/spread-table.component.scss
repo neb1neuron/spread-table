@@ -8,6 +8,11 @@ virtual-scroller {
   height: 100%;
 }
 
+.hideextra {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .spread-table {
   border-collapse: separate;
@@ -21,10 +26,14 @@ virtual-scroller {
     border-top: .2px solid #dde2eb;
     border-bottom: none;
     border-right: .2px solid #dde2eb;
+    height: 36px;
+    padding: 3px 8px;
+    text-align: left;
+    cursor: default;
   }
 
   td {
-    border-right: .2px solid #dde2eb;
+    border: .2px solid #dde2eb;
   }
 
   th:first-child,

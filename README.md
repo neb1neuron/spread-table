@@ -1,9 +1,10 @@
-# SpreadTable
+# SpreadTable - Angular spreadsheet table
 
 ## How it looks
 ![How it looks](https://raw.githubusercontent.com/neb1neuron/spread-table/master/demo.png)
 
-## Get Started
+## Demo
+[stackblitz](https://stackblitz.com/edit/spread-table-angular11?file=src/app/app.component.html)
 
 ### Installation
 
@@ -81,9 +82,6 @@ This library was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Dependencies
 ```
-"@ng-bootstrap/ng-bootstrap": "^9.0.2",
-"boostrap": "^2.0.0",
-"bootstrap": "^4.6.0",
 "ngx-virtual-scroller": "^4.0.3",
 "rxjs": "~6.6.0",
 ```
