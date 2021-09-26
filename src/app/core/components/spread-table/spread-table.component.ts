@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Cell, Column, Row } from 'src/app/models/cell.model';
+import { SpreadTable } from 'src/app/models/ispread-table';
 import { Change, UndoRedoService } from 'src/app/services/undo-redo.service';
 import { ContextMenuModel } from '../../models/context-menu.model';
 
@@ -9,7 +10,7 @@ import { ContextMenuModel } from '../../models/context-menu.model';
   templateUrl: './spread-table.component.html',
   styleUrls: ['./spread-table.component.scss']
 })
-export class SpreadTableComponent implements AfterViewInit, OnChanges {
+export class SpreadTableComponent extends SpreadTable implements AfterViewInit, OnChanges {
   table = document.getElementById('spreadTable');
 
   @Input() columnWidth = 100;
@@ -20,6 +21,7 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
 
   focus = true;
   form = new FormGroup({});
+  formControl = new FormControl();
 
   isMouseDown = false;
   startRowIndex = 0;
@@ -39,35 +41,43 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     redo: 'redo',
   };
 
-  contextMenuItems: Array<ContextMenuModel> = [{
-    faIconName: 'far fa-copy',
-    menuText: 'Copy',
-    disabled: true,
-    menuEvent: this.contextMenuActions.copy,
-    shortcut: 'Ctrl+C'
-  },
-  {
-    faIconName: 'fas fa-cut',
-    menuText: 'Cut',
-    menuEvent: this.contextMenuActions.cut,
-    shortcut: 'Ctrl+X'
-  },
-  {
-    faIconName: 'far fa-clipboard',
-    menuText: 'Paste',
-    menuEvent: this.contextMenuActions.paste,
-    shortcut: 'Ctrl+V'
-  }, {
-    faIconName: 'fas fa-undo',
-    menuText: 'Undo',
-    menuEvent: this.contextMenuActions.undo,
-    shortcut: 'Ctrl+Z'
-  }, {
-    faIconName: 'fas fa-redo',
-    menuText: 'Redo',
-    menuEvent: this.contextMenuActions.redo,
-    shortcut: 'Ctrl+Y'
-  },];
+  editableContextMenu = false;
+
+  contextMenuItems(): Array<ContextMenuModel> {
+    return [{
+      faIconName: 'far fa-copy',
+      menuText: 'Copy',
+      disabled: true,
+      menuEvent: this.contextMenuActions.copy,
+      shortcut: 'Ctrl+C'
+    },
+    {
+      faIconName: 'fas fa-cut',
+      menuText: 'Cut',
+      menuEvent: this.contextMenuActions.cut,
+      shortcut: 'Ctrl+X',
+      disabled: !this.editableContextMenu
+    },
+    {
+      faIconName: 'far fa-clipboard',
+      menuText: 'Paste',
+      menuEvent: this.contextMenuActions.paste,
+      shortcut: 'Ctrl+V',
+      disabled: !this.editableContextMenu
+    }, {
+      faIconName: 'fas fa-undo',
+      menuText: 'Undo',
+      menuEvent: this.contextMenuActions.undo,
+      shortcut: 'Ctrl+Z',
+      disabled: !this.editableContextMenu
+    }, {
+      faIconName: 'fas fa-redo',
+      menuText: 'Redo',
+      menuEvent: this.contextMenuActions.redo,
+      shortcut: 'Ctrl+Y',
+      disabled: !this.editableContextMenu
+    },]
+  };
   contextMenuPosition: any;
 
   @ViewChild('contextMenu', { read: ElementRef }) set contextMenu(element: ElementRef) {
@@ -93,7 +103,10 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     }
   }
 
-  constructor(private undoRedoService: UndoRedoService,) { }
+  constructor(private undoRedoService: UndoRedoService,) {
+    super();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes.rawData.currentValue) {
       for (let i = 0; i < this.rawData.length; i++) {
@@ -105,8 +118,6 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
         }
         this.data.push(row);
       }
-
-      console.log(this.data);
     }
   }
 
@@ -116,6 +127,10 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
 
   ngAfterViewInit() {
     this.table = document.getElementById('spreadTable');
+
+    this.table?.addEventListener('paste', this.handlePaste);
+
+    this.table?.addEventListener('copy', this.handleCopy);
 
     document.addEventListener('scroll', (e) => this.isDisplayContextMenu = false, true);
 
@@ -156,7 +171,7 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     this.form = new FormGroup({});
 
     this.columns.forEach((column) => {
-      this.form.addControl(column.name, new FormControl(this.getCellValue(this.data[cell.rowIndex], column.name)));
+      this.form.addControl(column.name, new FormControl(this.getCellValue(this.data[cell.rowIndex], column.name), column.validators));
     });
 
     this.startCellIndex = cell.columnIndex;
@@ -192,22 +207,25 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
       e.preventDefault();
     }
 
-    if (event.ctrlKey && event.key === 'c') {
-      this.copySelectedCellsValues();
-
-      e.stopPropagation();
-      e.preventDefault();
-    }
-
-    if (event.ctrlKey && event.key === 'v') {
-      this.pasteSelectedCellsValues();
-
-      e.stopPropagation();
-      e.preventDefault();
-    }
-
     if (!this.isEditMode) {
       switch (event.key) {
+        case 'Delete':
+        case 'Backspace':
+          this.isEditMode = true;
+          this.focus = true;
+
+          this.form = new FormGroup({});
+
+          this.columns.forEach((column) => {
+            this.form.addControl(column.name, new FormControl(this.getCellValue(this.data[this.selectedCellCoordinates?.rowIndex || 0], column.name), column.validators));
+          });
+
+          this.deleteSelectedCellsValues();
+
+          this.isEditMode = false;
+          e.stopPropagation();
+          e.preventDefault();
+          break;
         case 'ArrowLeft':
           if (this.selectedCellCoordinates) {
             let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
@@ -295,7 +313,7 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
       lastChange.forEach(change => {
         let cellData = this.getDataCell(change.coordinates.rowIndex, change.coordinates.columnIndex);
         if (cellData) {
-          cellData.value = change.beforeValue;
+          this.setCellValueAndValidate(cellData, change.beforeValue);
           cellData.selected = true;
         }
       });
@@ -309,11 +327,31 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
       lastChange.forEach(change => {
         let cellData = this.getDataCell(change.coordinates.rowIndex, change.coordinates.columnIndex);
         if (cellData) {
-          cellData.value = change.beforeValue;
+          this.setCellValueAndValidate(cellData, change.beforeValue);
           cellData.selected = true;
         }
       });
     }
+  }
+
+  deleteSelectedCellsValues() {
+    let selectedCells: Cell[] = [];
+    this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
+
+    let changes: Change[] = [];
+
+    selectedCells.forEach(cell => {
+      changes.push({
+        coordinates:
+          { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
+        beforeValue: cell.value,
+        afterValue: null
+      });
+      this.setCellValueAndValidate(cell, null);
+    });
+
+    if (changes.length > 0)
+      this.undoRedoService.setChange(changes);
   }
 
   cutSelectedCellsValues() {
@@ -321,66 +359,92 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
 
     let changes: Change[] = [];
-    this.copySelectedCellsValues();
+    this.handleCopy();
 
     selectedCells.forEach(cell => {
-      let cellData = this.getDataCell(cell.rowIndex, cell.columnIndex);
       changes.push({
         coordinates:
           { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
         beforeValue: cell.value,
         afterValue: null
       });
-      if (cellData) cellData.value = null;
+      this.setCellValueAndValidate(cell, null);
     });
 
     if (changes.length > 0)
       this.undoRedoService.setChange(changes);
   }
 
-  copySelectedCellsValues() {
+  handleCopy = async () => {
+    let selectedCells: Cell[] = [];
+    this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
+    this.clearSelection();
+    const data = this.groupBy(selectedCells, c => c.rowIndex);
+    let copyString = '';
+
+    data.forEach(valuesRow => {
+      valuesRow.map((c: Cell) => {
+        copyString += `${c.value}\t`; setTimeout(() => {
+          c.selected = true;
+        }, 200);
+      });
+      copyString = copyString.trimEnd();
+      copyString += '\r\n';
+    });
+    console.log(copyString);
+    await navigator.clipboard.writeText(copyString);
+  }
+
+  handlePaste = async () => {
+    if (this.isEditMode) return;
+    let pastedData;
+
+    pastedData = await navigator.clipboard.readText();
+    if (!pastedData) return;
+
+    const dataRows = pastedData.split('\r\n');
+
+    let copyData: any[] = [];
+
+    dataRows.forEach(dataRow => {
+      if (dataRow) {
+        copyData.push(dataRow.split('\t'));
+        console.log(dataRow);
+      }
+    });
+
     let selectedCells: Cell[] = [];
     this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
 
+    if (selectedCells.length === 0) return;
+
+    const rowIndexDifference = selectedCells[0].rowIndex;
+    const columnIndexDifference = selectedCells[0].columnIndex;
+    this.clearSelection();
     let changes: Change[] = [];
 
-    selectedCells.forEach(cell => {
-      cell.selected = false;
-      changes.push({
-        coordinates:
-          { rowIndex: cell.rowIndex, columnIndex: cell.columnIndex },
-        beforeValue: cell.value,
-        afterValue: null
-      });
-      setTimeout(() => {
-        cell.selected = true;
-      }, 200);
-    });
+    for (let i = 0; i < copyData.length; i++) {
+      const selectedRow = this.data.find(r => r.rowIndex == i + rowIndexDifference);
+      if (selectedCells.length > 1) {
+        if ((selectedRow?.rowIndex || 0) - rowIndexDifference > copyData.length - 1) break;
 
-    if (changes.length > 0)
-      this.undoRedoService.setCopyData(changes);
-  }
+      }
+      for (let j = 0; j < copyData[i].length; j++) {
+        const selectedCell = selectedCells.find(c => c.rowIndex === i + rowIndexDifference && c.columnIndex === j + columnIndexDifference);
 
-  pasteSelectedCellsValues() {
-    let selectedCells: Cell[] = [];
-    let copyData = this.undoRedoService.paste();
-    if (copyData) {
-      this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
-
-      const rowIndexDifference = selectedCells[0].rowIndex - copyData[0].coordinates.rowIndex;
-      const columnIndexDifference = selectedCells[0].columnIndex - copyData[0].coordinates.columnIndex;
-
-
-      let changes: Change[] = [];
-
-      selectedCells.forEach(cell => {
+        const cell = selectedRow?.cells.find(c => c.columnIndex === j + columnIndexDifference);
+        if (!cell || !this.columns[cell.columnIndex].editable) continue;
         cell.selected = false;
 
         const cellRowIndex = cell.rowIndex;
         const cellColumnIndex = cell.columnIndex;
 
-        const value = copyData ? copyData.find(cd => cd.coordinates.rowIndex === cellRowIndex - rowIndexDifference &&
-          cd.coordinates.columnIndex === cellColumnIndex - columnIndexDifference)?.beforeValue : null;
+        if (selectedCells.length > 1) {
+          if (!selectedCell) continue;
+          if (cellColumnIndex - columnIndexDifference > copyData[cellRowIndex - rowIndexDifference].length - 1) continue;
+        }
+
+        const value = copyData ? copyData[cellRowIndex - rowIndexDifference][cellColumnIndex - columnIndexDifference] : null;
 
         changes.push({
           coordinates:
@@ -389,16 +453,16 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
           afterValue: value
         });
 
-        cell.value = value;
+        this.setCellValueAndValidate(cell, value);
 
         setTimeout(() => {
           cell.selected = true;
         }, 200);
-      });
-
-      if (changes.length > 0)
-        this.undoRedoService.setChange(changes);
+      }
     }
+
+    if (changes.length > 0)
+      this.undoRedoService.setChange(changes);
   }
 
   setCellValue(column: Column, cell: Cell) {
@@ -410,6 +474,8 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
         afterValue: this.form.value[column.name]
       }]);
       cell.value = this.form.value[column.name];
+
+      this.setCellValueAndValidate(cell, this.form.value[column.name]);
     }
 
     this.isEditMode = false;
@@ -437,7 +503,6 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
       return;
     }
     this.isDisplayContextMenu = false;
-    if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex && this.selectedCellCoordinates.columnIndex === cell.columnIndex) return;
     if (!event.ctrlKey) {
       this.clearSelection();
     }
@@ -505,6 +570,7 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
       return false;
     }
 
+    this.editableContextMenu = this.columns[cell.columnIndex].editable || false;
     this.isDisplayContextMenu = true;
 
     this.contextMenuPosition = { x: event.clientX, y: event.clientY };
@@ -513,22 +579,25 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
 
   handleMenuItemClick(event: any) {
     this.isDisplayContextMenu = false;
-    console.log(event.data);
     switch (event.data) {
       case this.contextMenuActions.cut: {
         this.cutSelectedCellsValues();
+        this.table?.focus();
         break;
       }
       case this.contextMenuActions.paste: {
-        this.pasteSelectedCellsValues();
+        this.handlePaste();
+        this.table?.focus();
         break
       }
       case this.contextMenuActions.undo: {
         this.undo();
+        this.table?.focus();
         break
       }
       case this.contextMenuActions.redo: {
         this.redo();
+        this.table?.focus();
         break
       }
       default:
@@ -536,4 +605,33 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     }
   }
 
+  private setCellValueAndValidate(cell: Cell, value: any) {
+    cell.value = value;
+    this.formControl = new FormControl(value, this.columns[cell.columnIndex].validators);
+    const controlErrors = this.formControl.errors;
+    let cellErrors: string[] = [];
+    if (controlErrors) {
+      Object.keys(controlErrors).forEach(key => {
+        if (controlErrors[key])
+          cellErrors.push(`&bull;${controlErrors[key]}`);
+      });
+    }
+
+    cell.errors = cellErrors.join('<br>');
+  }
+
+
+  private groupBy<T, K>(list: T[], keyGetter: (item: T) => K) {
+    const map = new Map();
+    list.forEach((item) => {
+      const key = keyGetter(item);
+      const collection = map.get(key);
+      if (!collection) {
+        map.set(key, [item]);
+      } else {
+        collection.push(item);
+      }
+    });
+    return map;
+  }
 }

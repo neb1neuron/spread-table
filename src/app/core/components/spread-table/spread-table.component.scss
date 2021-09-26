@@ -21,35 +21,33 @@ virtual-scroller {
   height: 100%;
   outline: none;
   padding-right: 1px;
+  cursor: default;
 
   th {
-    border-top: .2px solid #dde2eb;
+    border-top: 0.2px solid #dde2eb;
     border-bottom: none;
-    border-right: .2px solid #dde2eb;
+    border-right: 0.2px solid #dde2eb;
     height: 36px;
     padding: 3px 8px;
     text-align: left;
     cursor: default;
   }
 
-  td {
-    border: .2px solid #dde2eb;
-  }
-
   th:first-child,
   td:first-child {
-    border-left: .2px solid #dde2eb;
+    border-left: 0.2px solid #dde2eb;
   }
 
   .spread-thead {
     z-index: 99999;
+    position: relative;
 
     tr:nth-child(2) th {
       top: 42px;
     }
 
     th {
-      border-bottom: .2px solid #dde2eb;
+      border-bottom: 0.2px solid #dde2eb;
       background: #f8f8f8;
       //min-width: 100px;
       // position: sticky;
@@ -75,11 +73,25 @@ virtual-scroller {
     word-wrap: break-word;
     background-color: #fff;
     transition: background-color 0.1s ease-in;
+    border: 0.2px solid #dde2eb;
+
+    &.not-editable {
+      background-color: #eeeeee;
+
+      .spread-cell-value {
+        color: grey;
+      }
+
+      &.selected {
+        background-color: #dddddd;
+        transition: background-color 0.1s ease-in;
+      }
+    }
 
     &.no-padding {
       padding: 3px;
       padding-left: 3px;
-      box-shadow: 0 .2px 4px .2px #00000013;
+      box-shadow: 0 0.2px 4px 0.2px #00000013;
     }
 
     &.selected {
@@ -89,6 +101,11 @@ virtual-scroller {
 
     &.spread-cell {
       line-height: 24px !important;
+    }
+
+    &.has-errors {
+      border: 1px solid #f67474;
+      border-radius: 2px;
     }
 
     .cell-in-edit {

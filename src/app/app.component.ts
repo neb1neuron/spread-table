@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
+import { RequiredValidator } from './custom-validators/required-validator';
 import { Column } from './models/cell.model';
 
 @Component({
@@ -18,7 +19,7 @@ export class AppComponent {
   columns: Column[] = [
     new Column({ displayName: 'Id', name: 'id', width: '40px', editable: false }),
     new Column({ displayName: 'Album Id', name: 'albumId', width: '70px' }),
-    new Column({ displayName: 'Title', name: 'title', width: '400px' }),
+    new Column({ displayName: 'Title', name: 'title', width: '400px', validators: [RequiredValidator.required(), RequiredValidator.requiredString()] }),
     new Column({ displayName: 'Url', name: 'url', width: '300px' }),
     new Column({ displayName: 'Thumbnail Url', name: 'thumbnailUrl', width: '300px' })];
 
@@ -29,7 +30,7 @@ export class AppComponent {
   }
 
   private async getData() {
-    const products: any = await this.httpClient.get('https://jsonplaceholder.typicode.com/photos').toPromise();
+    const products: any = await this.httpClient.get('../assets/data.json').toPromise();
     this.data = products;
     // const products: any = await this.httpClient.get('    https://gorest.co.in/public-api/products').toPromise();
     // this.data = products.data;

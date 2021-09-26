@@ -5,7 +5,7 @@ export class Cell {
   public disabled?= false;
   public rowIndex = 0;
   public columnIndex = 0;
-  public errors?: string[] = [];
+  public errors?: string = '';
 
   constructor(obj?: Cell) {
     Object.assign(this, obj);
@@ -29,6 +29,7 @@ export class Column {
   public displayName?= 'N/A';
   public width?= '100px';
   public editable?= true;
+  public validators?: any[] | undefined;
 
   constructor(obj?: Column) {
     Object.assign(this, obj);

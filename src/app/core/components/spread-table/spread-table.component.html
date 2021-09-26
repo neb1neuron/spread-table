@@ -8,8 +8,10 @@
     <table #spreadTable
            tabindex="-1"
            class="spread-table"
+           contenteditable="true"
            id="spreadTable">
       <thead #header
+             contenteditable="false"
              class="spread-thead">
         <tr>
           <th>Index</th>
@@ -18,6 +20,7 @@
         </tr>
       </thead>
       <tbody #container
+             contenteditable="false"
              class="spread-tbody">
         <tr class="spread-row"
             *ngFor="let row of scroll.viewPortItems;let i = index">
@@ -29,16 +32,24 @@
               (mousedown)="cellClick($event,row.cells[j])"
               (mouseover)="mouseOverCall(row.cells[j])"
               [ngClass]="[isInEditMode(row.cells[j]) ? 'no-padding':'',
-            row.cells[j]?.selected  ? 'selected' : '']"
+            row.cells[j]?.selected  ? 'selected' : '',
+            row.cells[j]?.errors  ? 'has-errors' : '',
+            column.editable ? '' : 'not-editable']"
               *ngFor="let column of columns;let j = index">
-            <div class="spread-cell-value hideextra"
-                 [style.width]="column.width || '100px'"
-                 *ngIf="!isInEditMode(row.cells[j])">{{getCellValue(row,column.name)}}</div>
-            <input *ngIf="isInEditMode(row.cells[j])"
-                   type="text"
-                   class="cell-in-edit w-100"
-                   (blur)="setCellValue(columns[j],row.cells[j])"
-                   [formControlName]="columns[j].name" />
+            <div style="height: 100%;"
+                 class="error tooltip w-100">
+              <div class="spread-cell-value hideextra"
+                   [style.width]="column.width || '100px'"
+                   *ngIf="!isInEditMode(row.cells[j])">{{getCellValue(row,column.name)}}</div>
+              <input *ngIf="isInEditMode(row.cells[j])"
+                     type="text"
+                     class="cell-in-edit w-100"
+                     (blur)="setCellValue(columns[j],row.cells[j])"
+                     [formControlName]="columns[j].name" />
+              <span *ngIf="row.cells[j].errors"
+                    class="tooltiptext tooltip-bottom"
+                    [innerHtml]="row.cells[j].errors"></span>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -46,6 +57,6 @@
   </div>
 </virtual-scroller>
 <app-context-menu #contextMenu
-                  *ngIf="contextMenuItems.length > 0 && isDisplayContextMenu"
-                  [contextMenuItems]="contextMenuItems"
+                  *ngIf="contextMenuItems().length > 0 && isDisplayContextMenu"
+                  [contextMenuItems]="contextMenuItems()"
                   (onContextMenuItemClick)="handleMenuItemClick($event)"></app-context-menu>

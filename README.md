@@ -1,9 +1,11 @@
 # SpreadTable - Angular spreadsheet table
 
 ## How it looks
+
 ![How it looks](https://raw.githubusercontent.com/neb1neuron/spread-table/master/demo.png)
 
 ## Demo
+
 [stackblitz](https://stackblitz.com/edit/spread-table-angular11?file=src/app/app.component.html)
 
 ### Installation
@@ -23,39 +25,48 @@ yarn add spread-table
 ### Module Setup (app.module.ts)
 
 ```typescript
-import { SpreadTableModule } from 'spread-table';
+import { SpreadTableModule } from "spread-table";
 
 @NgModule({
   imports: [
     // Other module imports
-    ...
-    // spread-table modules
-    SpreadTableModule
-  ]
+    ...// spread-table modules
+    SpreadTableModule,
+  ],
 })
-export class AppModule { }
+export class AppModule {}
 ```
 
 ### Usage (app.component.ts)
 
 ```typescript
-import { HttpClient } from '@angular/common/http';
-import { Component } from '@angular/core';
-import { Column } from 'spread-table';
+import { HttpClient } from "@angular/common/http";
+import { Component } from "@angular/core";
+import { Column } from "spread-table";
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  selector: "app-root",
+  templateUrl: "./app.component.html",
+  styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
-  title = 'spread-table-test';
+  title = "spread-table-test";
   columns: Column[] = [
-    new Column({ displayName: 'Id', name: 'id', width: '40px', editable: false }),
-    new Column({ displayName: 'Album Id', name: 'albumId', width: '70px' }),
-    new Column({ displayName: 'Title', name: 'title', width: '400px' }),
-    new Column({ displayName: 'Url', name: 'url', width: '300px' }),
-    new Column({ displayName: 'Thumbnail Url', name: 'thumbnailUrl', width: '300px' })];
+    new Column({
+      displayName: "Id",
+      name: "id",
+      width: "40px",
+      editable: false,
+    }),
+    new Column({ displayName: "Album Id", name: "albumId", width: "70px" }),
+    new Column({ displayName: "Title", name: "title", width: "400px" }),
+    new Column({ displayName: "Url", name: "url", width: "300px" }),
+    new Column({
+      displayName: "Thumbnail Url",
+      name: "thumbnailUrl",
+      width: "300px",
+    }),
+  ];
 
   data: any;
 
@@ -64,23 +75,33 @@ export class AppComponent {
   }
 
   private async getData() {
-    const products: any = this.httpClient.get('https://jsonplaceholder.typicode.com/photos');
+    const products: any = this.httpClient.get(
+      "https://jsonplaceholder.typicode.com/photos"
+    );
   }
 }
 ```
 
 ### Usage (app.component.html)
+
 ```html
-<div class="p-3 w-100"
-     style="height: 800px;">
-  <spread-table [columns]="columns"
-                [rawData]="data | async"></spread-table>
+<div class="p-3 w-100" style="height: 800px;">
+  <spread-table [columns]="columns" [rawData]="data | async"></spread-table>
 </div>
 ```
 
 This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 12.2.3.
 
+## Versions
+
+### v1.0.3
+
+- improved clipboard functionality to be able to paste from excel and copy from **spread-table** to excel
+- added styling for disabled column
+- fixed paste on disabled cells
+
 ## Dependencies
+
 ```
 "ngx-virtual-scroller": "^4.0.3",
 "rxjs": "~6.6.0",
@@ -89,4 +110,3 @@ This library was generated with [Angular CLI](https://github.com/angular/angular
 ## License
 
 This repository is licensed with the [MIT].
-
