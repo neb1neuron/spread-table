@@ -29,16 +29,23 @@
               (mousedown)="cellClick($event,row.cells[j])"
               (mouseover)="mouseOverCall(row.cells[j])"
               [ngClass]="[isInEditMode(row.cells[j]) ? 'no-padding':'',
-            row.cells[j]?.selected  ? 'selected' : '']"
+            row.cells[j]?.selected  ? 'selected' : '',
+            !isInEditMode(row.cells[j]) && row.cells[j].errors?.length > 0 ? 'border-error tooltip' : '']"
               *ngFor="let column of columns;let j = index">
+            <div *ngIf="!isInEditMode(row.cells[j]) && row.cells[j].errors?.length > 0"
+                 class="tooltiptext"
+                 [innerHtml]="getCellErrors(row.cells[j])"></div>
             <div class="spread-cell-value hideextra"
                  [style.width]="column.width || '100px'"
-                 *ngIf="!isInEditMode(row.cells[j])">{{getCellValue(row,column.name)}}</div>
+                 *ngIf="!isInEditMode(row.cells[j])">
+              {{getCellValue(row,column.name)}}
+            </div>
             <input *ngIf="isInEditMode(row.cells[j])"
                    type="text"
                    class="cell-in-edit w-100"
                    (blur)="setCellValue(columns[j],row.cells[j])"
-                   [formControlName]="columns[j].name" />
+                   [formControlName]="columns[j].name"
+                   [ngClass]="{'':form.get(columns[j].name)?.invalid}" />
           </td>
         </tr>
       </tbody>

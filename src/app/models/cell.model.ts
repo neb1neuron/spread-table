@@ -1,3 +1,5 @@
+import { ValidatorFn } from "@angular/forms";
+
 export class Cell {
   public columnName = '';
   public value?: any;
@@ -29,6 +31,8 @@ export class Column {
   public displayName?= 'N/A';
   public width?= '100px';
   public editable?= true;
+  public validators?: ValidatorFn[] = [];
+  public errors?: string[] = [];
 
   constructor(obj?: Column) {
     Object.assign(this, obj);

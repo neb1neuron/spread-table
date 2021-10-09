@@ -129,6 +129,10 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     this.table?.addEventListener("keydown", (e) => { this.keyDownCall(e) });
   }
 
+  getCellErrors(cell: Cell) {
+    return cell.errors?.join('<br>');
+  }
+
   mouseUp() {
     this.isMouseDown = false;
   }
@@ -156,7 +160,7 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     this.form = new FormGroup({});
 
     this.columns.forEach((column) => {
-      this.form.addControl(column.name, new FormControl(this.getCellValue(this.data[cell.rowIndex], column.name)));
+      this.form.addControl(column.name, new FormControl(this.getCellValue(this.data[cell.rowIndex], column.name), column.validators));
     });
 
     this.startCellIndex = cell.columnIndex;
@@ -205,6 +209,11 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
       e.stopPropagation();
       e.preventDefault();
     }
+
+    // if (this.selectedCellCoordinates) {
+    //   let currentCell = this.getDataCell(this.selectedCellCoordinates.rowIndex, this.selectedCellCoordinates.columnIndex);
+    //   currentCell.errors = [this.form.get(currentCell.columnName)?.errors?.toString() || ''];
+    // }
 
     if (!this.isEditMode) {
       switch (event.key) {
@@ -417,6 +426,20 @@ export class SpreadTableComponent implements AfterViewInit, OnChanges {
     if (this.selectedCellCoordinates?.rowIndex === cell.rowIndex &&
       this.selectedCellCoordinates?.columnIndex === cell.columnIndex) {
       cell.selected = true;
+    }
+
+    const errors = this.form.get(cell.columnName)?.errors || {};
+    const errorKeys = Object.keys(errors);
+
+    let errorMessage: string[] = [];
+    errorKeys.forEach(errorKey => {
+      errorMessage.push(`${errors[errorKey].message}`);
+    });
+
+    if (errorMessage.length > 0) {
+      cell.errors = errorMessage;
+    } else {
+      cell.errors = [];
     }
   }
 

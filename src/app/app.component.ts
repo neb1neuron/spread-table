@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
+import { MyValidators } from './core/validators/my.validator';
 import { Column } from './models/cell.model';
 
 @Component({
@@ -17,9 +18,9 @@ export class AppComponent {
   // new Column({ displayName: 'Image Url', name: 'image', width: '300px' })];
   columns: Column[] = [
     new Column({ displayName: 'Id', name: 'id', width: '40px', editable: false }),
-    new Column({ displayName: 'Album Id', name: 'albumId', width: '70px' }),
-    new Column({ displayName: 'Title', name: 'title', width: '400px' }),
-    new Column({ displayName: 'Url', name: 'url', width: '300px' }),
+    new Column({ displayName: 'Album Id', name: 'albumId', width: '70px', validators: [MyValidators.required()] }),
+    new Column({ displayName: 'Title', name: 'title', width: '400px', validators: [MyValidators.required()] }),
+    new Column({ displayName: 'Url', name: 'url', width: '300px', validators: [MyValidators.required()] }),
     new Column({ displayName: 'Thumbnail Url', name: 'thumbnailUrl', width: '300px' })];
 
   data: any;
