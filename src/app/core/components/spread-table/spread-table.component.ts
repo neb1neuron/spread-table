@@ -376,6 +376,7 @@ export class SpreadTableComponent extends SpreadTable implements AfterViewInit, 
   }
 
   handleCopy = async () => {
+    if (this.isEditMode) return;
     let selectedCells: Cell[] = [];
     this.data.forEach(r => selectedCells = selectedCells.concat(r.cells.filter(d => d.selected)));
     this.clearSelection();
@@ -500,6 +501,10 @@ export class SpreadTableComponent extends SpreadTable implements AfterViewInit, 
   cellClick(e: Event, cell: Cell) {
     let event = e as MouseEvent;
     if (event.button === 2 && cell.selected) {
+      return;
+    }
+    if (cell.columnIndex === this.selectedCellCoordinates?.columnIndex &&
+      cell.rowIndex === this.selectedCellCoordinates.rowIndex) {
       return;
     }
     this.isDisplayContextMenu = false;
