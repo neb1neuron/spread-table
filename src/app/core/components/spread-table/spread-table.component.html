@@ -1,7 +1,4 @@
-<virtual-scroller #scroll
-                  [stripedTable]="true"
-                  [enableUnequalChildrenSizes]="true"
-                  [items]="data">
+<cdk-virtual-scroll-viewport [itemSize]="10">
   <div #spreadWrapper
        class="wrapper"
        [formGroup]="form">
@@ -10,8 +7,7 @@
            class="spread-table"
            contenteditable="true"
            id="spreadTable">
-      <thead #header
-             contenteditable="false"
+      <thead contenteditable="false"
              class="spread-thead">
         <tr>
           <th>Index</th>
@@ -19,11 +15,10 @@
               *ngFor="let column of columns">{{column.displayName}}</th>
         </tr>
       </thead>
-      <tbody #container
-             contenteditable="false"
+      <tbody contenteditable="false"
              class="spread-tbody">
         <tr class="spread-row"
-            *ngFor="let row of scroll.viewPortItems;let i = index">
+            *cdkVirtualFor="let row of data;let i = index">
           <td style="width: 10px;">{{row.rowIndex}}</td>
           <td #spreadCell
               class="spread-cell"
@@ -55,7 +50,7 @@
       </tbody>
     </table>
   </div>
-</virtual-scroller>
+</cdk-virtual-scroll-viewport>
 <app-context-menu #contextMenu
                   *ngIf="contextMenuItems().length > 0 && isDisplayContextMenu"
                   [contextMenuItems]="contextMenuItems()"

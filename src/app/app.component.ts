@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
+import { lastValueFrom } from 'rxjs';
 import { RequiredValidator } from './custom-validators/required-validator';
 import { Column } from './models/cell.model';
 
@@ -30,7 +31,7 @@ export class AppComponent {
   }
 
   private async getData() {
-    const products: any = await this.httpClient.get('../assets/data.json').toPromise();
+    const products: any = await lastValueFrom(this.httpClient.get('../assets/data.json'));
     this.data = products;
     // const products: any = await this.httpClient.get('    https://gorest.co.in/public-api/products').toPromise();
     // this.data = products.data;

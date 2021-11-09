@@ -6,9 +6,9 @@ import { AppComponent } from './app.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { SpreadTableComponent } from './core/components/spread-table/spread-table.component';
-import { VirtualScrollerModule } from 'ngx-virtual-scroller';
 import { ContextMenuComponent } from './core/components/context-menu/context-menu.component';
 import { HttpClientModule } from '@angular/common/http';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 @NgModule({
   declarations: [
     AppComponent,
@@ -21,9 +21,8 @@ import { HttpClientModule } from '@angular/common/http';
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,
-    //NgbModule,
+    ScrollingModule,
     HttpClientModule,
-    VirtualScrollerModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
